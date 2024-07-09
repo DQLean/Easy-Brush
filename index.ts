@@ -229,7 +229,7 @@ export class Brush {
     }
 
     loadImage(img: HTMLImageElement | HTMLCanvasElement) {
-        if (img as HTMLCanvasElement) {
+        if (img instanceof HTMLCanvasElement) {
             const canvas = img as HTMLCanvasElement
             this.shapeCanvas = canvas
             this.shapeContext = canvas.getContext("2d") as CanvasRenderingContext2D;
