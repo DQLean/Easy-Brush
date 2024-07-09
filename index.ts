@@ -179,33 +179,7 @@ export class Brush {
         if (p.callback) try { p.callback() } catch (err) { console.error(err) }
     }
 
-    // set brush config
-    setConfig<T extends keyof BrushBasicConfig>(key: T, val: BrushBasicConfig[T]) {
-        this.config[key] = val;
-    }
-
-    // set advanced config
-    setAdvancedConfig<T extends keyof BrushAdvancedConfig>(key: T, val: BrushAdvancedConfig[T]) {
-        this.advancedConfig[key] = val;
-    }
-
-    /**
-     * Load the context of canvas, which usually does not need to be called. 
-     * It has already been initialized in the constructor
-     */
-    loadConfig(config: BrushConfig) {
-        this.config = {
-            size: config.size ?? this.config.size,
-            opacity: config.opacity ?? this.config.opacity,
-            flow: config.flow ?? this.config.flow,
-            color: config.color ?? this.config.color,
-            angle: config.angle ?? this.config.angle,
-            roundness: config.roundness ?? this.config.roundness,
-            spacing: config.spacing ?? this.config.spacing,
-        };
-    }
-
-    loadContext(canvas: HTMLCanvasElement) {
+    private loadContext(canvas: HTMLCanvasElement) {
         const showCvs = canvas;
         const showCtx = canvas.getContext('2d') as CanvasRenderingContext2D;
 
@@ -228,23 +202,8 @@ export class Brush {
         this.strokeContext = strokeCtx
     }
 
-    loadImage(img: HTMLImageElement | HTMLCanvasElement) {
-        if (img instanceof HTMLCanvasElement) {
-            const canvas = img as HTMLCanvasElement
-            this.shapeCanvas = canvas
-            this.shapeContext = canvas.getContext("2d") as CanvasRenderingContext2D;
-        } else {
-            const image = img as HTMLImageElement
-            const shapeCvs = document.createElement("canvas")
-            shapeCvs.width = image.naturalWidth
-            shapeCvs.height = image.naturalHeight
-            const shapeCtx = shapeCvs.getContext("2d") as CanvasRenderingContext2D;
-            shapeCtx.globalAlpha = 1
-            shapeCtx.drawImage(image, 0, 0, shapeCvs.width, shapeCvs.height)
-            this.shapeCanvas = shapeCvs
-            this.shapeContext = shapeCtx
-        }
-        // TODO: init color
+    private imageInitColoring() {
+        if (!this.shapeCanvas || !this.shapeContext) return
         const oriGlobalCompositeOperation = this.shapeContext.globalCompositeOperation
         this.shapeContext.globalCompositeOperation = "source-atop"
         this.shapeContext.fillStyle = "#000"
@@ -253,6 +212,103 @@ export class Brush {
         this.shapeContext.fill()
         this.shapeContext.closePath()
         this.shapeContext.globalCompositeOperation = oriGlobalCompositeOperation
+    }
+
+    private loadImageWithCanvas(img: HTMLCanvasElement) {
+        const canvas = img
+        this.shapeCanvas = canvas
+        this.shapeContext = canvas.getContext("2d") as CanvasRenderingContext2D;
+
+        this.imageInitColoring()
+    }
+
+    private loadImageWithElement(img: HTMLImageElement) {
+        const image = img as HTMLImageElement
+        const shapeCvs = document.createElement("canvas")
+        shapeCvs.width = image.naturalWidth
+        shapeCvs.height = image.naturalHeight
+        const shapeCtx = shapeCvs.getContext("2d") as CanvasRenderingContext2D;
+        shapeCtx.globalAlpha = 1
+        shapeCtx.drawImage(image, 0, 0, shapeCvs.width, shapeCvs.height)
+        this.shapeCanvas = shapeCvs
+        this.shapeContext = shapeCtx
+
+        this.imageInitColoring()
+    }
+
+    private loadImageWithUrl(url: string, callback?: Function, onError?: Function) {
+        const image = new Image();
+        image.src = url;
+        image.onload = () => {
+            this.loadImageWithElement(image)
+            callback?.()
+        };
+        image.onerror = () => {
+            onError?.()
+        }
+    }
+
+    /**
+     * set brush config
+     */
+    setConfig<T extends keyof BrushBasicConfig>(key: T, val: BrushBasicConfig[T]) {
+        this.config[key] = val;
+    }
+
+    /**
+     * set advanced config
+     */
+    setAdvancedConfig<T extends keyof BrushAdvancedConfig>(key: T, val: BrushAdvancedConfig[T]) {
+        this.advancedConfig[key] = val;
+    }
+
+    /**
+     * Load/Modify Brush Configuration
+     */
+    loadConfig(config: BrushConfig) {
+        this.config = {
+            size: config.size ?? this.config.size,
+            opacity: config.opacity ?? this.config.opacity,
+            flow: config.flow ?? this.config.flow,
+            color: config.color ?? this.config.color,
+            angle: config.angle ?? this.config.angle,
+            roundness: config.roundness ?? this.config.roundness,
+            spacing: config.spacing ?? this.config.spacing,
+        };
+    }
+
+
+    /**
+     * This function allows loading images as brush styles.
+     * 
+     * The image format has strict requirements. 
+     * Please use '.png' images with a transparent background or other image formats 
+     * with a transparent background. Pixels with content in the image will be used as the pattern shape.
+     * 
+     * Tip: Image loading may take some time ! ! ! Pls use callback or 'loadImageAsync' Function ! ! !
+     */
+    loadImage(img: HTMLImageElement | HTMLCanvasElement | string, callback?: (isSuc: boolean) => void) {
+        if (img instanceof HTMLCanvasElement) {
+            this.loadImageWithCanvas(img)
+            callback?.(true)
+        } else if (img instanceof HTMLImageElement) {
+            this.loadImageWithElement(img)
+            callback?.(true)
+        } else {
+            this.loadImageWithUrl(img, () => { callback?.(true) }, () => { callback?.(false) })
+        }
+    }
+
+    /**
+     * Asynchronous version of 'loadImage'
+     */
+    loadImageAsync(img: HTMLImageElement | HTMLCanvasElement | string): Promise<void> {
+        return new Promise((resolve, reject) => {
+            this.loadImage(img, (isSuc) => {
+                if (isSuc) resolve()
+                else reject()
+            })
+        })
     }
 
     /**

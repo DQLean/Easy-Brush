@@ -1,6 +1,6 @@
 {
   "name": "easy-brush",
-  "version": "0.0.5",
+  "version": "0.0.6",
   "description": "Easy-Brush is a JavaScript brush engine designed for drawing on HTML5 canvas elements. It offers smooth Bezier curves for a natural drawing experience.",
   "main": "dist/index.js",
   "files": [
