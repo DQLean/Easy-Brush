@@ -87,7 +87,7 @@ brush.useModule(new DynamicShape({
 
 Use Transparency Dynamics
 ```javascript
-import { DynamicShape } from 'easy-brush';
+import { DynamicTransparency } from 'easy-brush';
 
 brush.useModule(new DynamicTransparency({
     opacityJitter: 0.5,
