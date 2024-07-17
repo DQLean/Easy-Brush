@@ -17,6 +17,7 @@ const defaultConfig: DynamicShapeBasicConfig = {
 
 export class DynamicShape {
     private config: DynamicShapeBasicConfig = defaultConfig;
+
     constructor(config?: DynamicShapeConfig) {
         this.config = { ...defaultConfig, ...config };
     }
@@ -68,9 +69,9 @@ export class DynamicShape {
         return newRoundness
     }
 
-    onChangeConfig(config: BrushBasicConfig, point: PurePoint) {
-        config.size = this.changeSize(config.size, point.pressure)
-        config.angle = this.changeAngle(config.angle, point.pressure)
-        config.roundness = this.changeRoundness(config.roundness, point.pressure)
+    onChangeConfig(config: BrushBasicConfig, pressure: number) {
+        config.size = this.changeSize(config.size, pressure)
+        config.angle = this.changeAngle(config.angle, pressure)
+        config.roundness = this.changeRoundness(config.roundness, pressure)
     }
 }

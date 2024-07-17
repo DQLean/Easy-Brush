@@ -86,7 +86,7 @@ export class Brush {
         const cnf = { ...this.config }
         for (let module of this.modules) {
             if (module.onChangeConfig) {
-                module.onChangeConfig(cnf, { x, y, pressure })
+                module.onChangeConfig(cnf, pressure)
             }
         }
         if (cnf.opacity > 1) cnf.opacity = 1

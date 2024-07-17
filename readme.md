@@ -55,16 +55,19 @@ canvas.addEventListener('mouseup', () => {
 
 ## Template
 Default effect:
-![Default effect](./docs/default.png "Default effect")
+
+![Default effect](https://github.com/DQLean/Easy-Brush/tree/main/docs/default.png "Default effect")
 
 Use Brush Image:
 ```javascript
 // If the image is in URL format, there will be a loading time
-brush.loadImage(BrushImg, (isSuc) => {
+const img = "image url" | HTMLImageElement | HTMLCanvasElement
+// Please use PNG image with transparent background
+brush.loadImage(img, (isSuc) => {
     console.log(isSuc, "brush image load end");
 })
 ```
-![Use Brush Image](./docs/use_image.png "Use Brush Image")
+![Use Brush Image](https://github.com/DQLean/Easy-Brush/tree/main/docs/use_image.png "Use Brush Image")
 
 ### Modules
 Use Shape Dynamics
@@ -80,7 +83,19 @@ brush.useModule(new DynamicShape({
 }))
 ```
 
-![Use Dynamic Shape](./docs/use_dynamic_shape.png "Use Dynamic Shape")
+![Use Dynamic Shape](https://github.com/DQLean/Easy-Brush/tree/main/docs/use_dynamic_shape.png "Use Dynamic Shape")
+
+Use Transparency Dynamics
+```javascript
+import { DynamicShape } from 'easy-brush';
+
+brush.useModule(new DynamicTransparency({
+    opacityJitter: 0.5,
+    opacityJitterTrigger: "none",
+    flowJitter: 0.5,
+    flowJitterTrigger: "none",
+}))
+```
 
 ## License
 This project is licensed under the MIT License.
