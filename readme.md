@@ -56,7 +56,7 @@ canvas.addEventListener('mouseup', () => {
 ## Template
 Default effect:
 
-![Default effect](https://github.com/DQLean/Easy-Brush/tree/main/docs/default.png "Default effect")
+![Default effect](https://github.com/DQLean/Easy-Brush/blob/main/docs/default.png "Default effect")
 
 Use Brush Image:
 ```javascript
@@ -67,7 +67,7 @@ brush.loadImage(img, (isSuc) => {
     console.log(isSuc, "brush image load end");
 })
 ```
-![Use Brush Image](https://github.com/DQLean/Easy-Brush/tree/main/docs/use_image.png "Use Brush Image")
+![Use Brush Image](https://github.com/DQLean/Easy-Brush/blob/main/docs/use_image.png "Use Brush Image")
 
 ### Modules
 Use Shape Dynamics
@@ -83,7 +83,7 @@ brush.useModule(new DynamicShape({
 }))
 ```
 
-![Use Dynamic Shape](https://github.com/DQLean/Easy-Brush/tree/main/docs/use_dynamic_shape.png "Use Dynamic Shape")
+![Use Dynamic Shape](https://github.com/DQLean/Easy-Brush/blob/main/docs/use_dynamic_shape.png "Use Dynamic Shape")
 
 Use Transparency Dynamics
 ```javascript
