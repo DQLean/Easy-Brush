@@ -118,9 +118,9 @@ brush.useModule(new DynamicTransparencyModule({
 
 #### Use Spread
 ```javascript
-import { DynamicSpreadModule } from 'easy-brush';
+import { SpreadModule } from 'easy-brush';
 
-brush.useModule(new DynamicSpreadModule({
+brush.useModule(new SpreadModule({
     spreadRange: 0.8,
     spreadTrigger: "none",
     count: 5,
