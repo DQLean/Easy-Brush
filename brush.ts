@@ -319,10 +319,32 @@ export class Brush {
             /**
              * 如果不存在前一个点，或者不启用间距，则直接加入坐标池，无需计算插值
              */
-            const point: Point = this.newPoint(x, y, pressure)
-            this.points.push(point)
-            this.prePrePoint = this.prePoint
-            this.prePoint = { ...point }
+            let isHandled = false
+            for (let module of this.modules) {
+                if (module.onChangePoint) {
+                    const res = module.onChangePoint({ x, y, pressure }, { ...this.config })
+                    if (Array.isArray(res)) {
+                        for (let p of res) {
+                            const point: Point = this.newPoint(p.x, p.y, p.pressure)
+                            this.points.push(point)
+                            this.prePrePoint = this.prePoint
+                            this.prePoint = { ...point }
+                        }
+                    } else {
+                        const point: Point = this.newPoint(res.x, res.y, res.pressure)
+                        this.points.push(point)
+                        this.prePrePoint = this.prePoint
+                        this.prePoint = { ...point }
+                    }
+                    isHandled = true
+                }
+            }
+            if (!isHandled) {
+                const point: Point = this.newPoint(x, y, pressure)
+                this.points.push(point)
+                this.prePrePoint = this.prePoint
+                this.prePoint = { ...point }
+            }
         } else {
             /**
              * 计算当前点与前一个点之间是否需要插值，并且计算插值及贝塞尔变换
@@ -346,44 +368,64 @@ export class Brush {
             // 当前插值点列表
             const interpolationPoints = []
             // 上一个插值点
-            const lastP = { x: p1.x, y: p1.y }
+            const lastP = { x: p1.x, y: p1.y, pressure: p1.pressure }
 
             for (let i = space; i <= distance; i += space) {
                 const t = i / distance
                 const curPressure = p2.pressure + (p1.pressure - p2.pressure) * t
 
-                const point: Point = this.newPoint(0, 0, curPressure)
+                let pointX: number, pointY: number = 0
 
                 if (this.advancedConfig.isSmooth) {
                     // 贝塞尔变换
                     const { x, y } = quadraticBezier(t, p2.x, p2.y, control.x, control.y, p1.x, p1.y)
-                    point.x = x
-                    point.y = y
+                    pointX = x
+                    pointY = y
                 } else {
                     // 不使用贝塞尔变换
-                    point.x = p2.x + Math.cos(angle) * i
-                    point.y = p2.y + Math.sin(angle) * i
+                    pointX = p2.x + Math.cos(angle) * i
+                    pointY = p2.y + Math.sin(angle) * i
                 }
 
                 if (interpolationPoints.length > 0) {
                     // 矫正贝塞尔变换后的space差异
-                    const intDist = getDistance(point.x, point.y, lastP.x, lastP.y)
+                    const intDist = getDistance(pointX, pointY, lastP.x, lastP.y)
                     if (intDist != space) {
-                        const angle = getAngle(lastP.x, lastP.y, point.x, point.y)
-                        point.x = lastP.x + Math.cos(angle) * space
-                        point.y = lastP.y + Math.sin(angle) * space
+                        const angle = getAngle(lastP.x, lastP.y, pointX, pointY)
+                        pointX = lastP.x + Math.cos(angle) * space
+                        pointY = lastP.y + Math.sin(angle) * space
                     }
                 }
 
-                lastP.x = point.x
-                lastP.y = point.y
+                lastP.x = pointX
+                lastP.y = pointY
+                lastP.pressure = curPressure
 
-                interpolationPoints.push(point)
+                let isHandled = false
+                for (let module of this.modules) {
+                    if (module.onChangePoint) {
+                        const res = module.onChangePoint({ x: pointX, y: pointY, pressure: curPressure }, { ...this.config })
+                        if (Array.isArray(res)) {
+                            for (let p of res) {
+                                this.points.push(this.newPoint(p.x, p.y, p.pressure))
+                            }
+                        } else {
+                            this.points.push(this.newPoint(res.x, res.y, res.pressure))
+                        }
+                        isHandled = true
+                    }
+                }
+                if (!isHandled) {
+                    interpolationPoints.push(this.newPoint(pointX, pointY, curPressure))
+                }
             }
 
-            this.points = this.points.concat(interpolationPoints)
+            for (let p of interpolationPoints) {
+                this.points.push(p)
+            }
+            interpolationPoints.length = 0
             this.prePrePoint = this.prePoint
-            this.prePoint = { x: lastP.x, y: lastP.y, pressure }
+            this.prePoint = { x: lastP.x, y: lastP.y, pressure: lastP.pressure }
         }
     }
 

@@ -1,6 +1,5 @@
 import { BrushBasicConfig } from "../types/config";
 import { DynamicShapeBasicConfig, DynamicShapeConfig } from "../types/dynamicShape";
-import { PurePoint } from "../types/point";
 import { clamp } from "../utils/math";
 import { randomRound } from "../utils/random";
 
@@ -15,7 +14,7 @@ const defaultConfig: DynamicShapeBasicConfig = {
     minRoundness: 0.00,
 }
 
-export class DynamicShape {
+export class DynamicShapeModule {
     private config: DynamicShapeBasicConfig = defaultConfig;
 
     constructor(config?: DynamicShapeConfig) {

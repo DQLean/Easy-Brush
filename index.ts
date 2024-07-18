@@ -1,6 +1,7 @@
 export { Brush } from './brush'
-export { DynamicShape } from './modules/dynamicShape'
-export { DynamicTransparency } from './modules/dynamicTransparency'
+export { DynamicShapeModule } from './modules/dynamicShape'
+export { DynamicTransparencyModule } from './modules/dynamicTransparency'
+export { SpreadModule } from './modules/spread'
 
 export { type BrushConfig } from './types/config'
 export { type Module } from './types/modules'

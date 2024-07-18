@@ -12,7 +12,7 @@ const defaultConfig: DynamicTransparencyBasicConfig = {
     minFlowJitter: 0.00,
 }
 
-export class DynamicTransparency {
+export class DynamicTransparencyModule {
     private config: DynamicTransparencyBasicConfig = defaultConfig;
 
     constructor(config?: DynamicTransparencyConfig) {
