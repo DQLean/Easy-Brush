@@ -32,7 +32,7 @@ const config = {
     flow: 0.7,
     opacity: 0.5,
     spacing: 0.8,
-    roundness: 0.00,
+    roundness: 1.00,
     angle: 0.00,
 }
 const brush = new Brush(canvas, config);
