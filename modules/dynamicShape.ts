@@ -15,10 +15,27 @@ const defaultConfig: DynamicShapeBasicConfig = {
 }
 
 export class DynamicShapeModule {
-    private config: DynamicShapeBasicConfig = defaultConfig;
+    /** module config */
+    config: DynamicShapeBasicConfig = defaultConfig;
 
     constructor(config?: DynamicShapeConfig) {
-        this.config = { ...defaultConfig, ...config };
+        if (config?.sizeJitter != void 0 && config?.sizeJitter != null) this.config.sizeJitter = config.sizeJitter;
+        if (config?.sizeJitterTrigger != void 0 && config?.sizeJitterTrigger != null) this.config.sizeJitterTrigger = config.sizeJitterTrigger;
+        if (config?.angleJitter != void 0 && config?.angleJitter != null) this.config.angleJitter = config.angleJitter;
+        if (config?.angleJitterTrigger != void 0 && config?.angleJitterTrigger != null) this.config.angleJitterTrigger = config.angleJitterTrigger;
+        if (config?.roundJitter != void 0 && config?.roundJitter != null) this.config.roundJitter = config.roundJitter;
+        if (config?.roundJitterTrigger != void 0 && config?.roundJitterTrigger != null) this.config.roundJitterTrigger = config.roundJitterTrigger;
+        if (config?.minDiameter != void 0 && config?.minDiameter != null) this.config.minDiameter = config.minDiameter;
+        if (config?.minRoundness != void 0 && config?.minRoundness != null) this.config.minRoundness = config.minRoundness;
+    }
+
+    /**
+     * Bind config to brush. 
+     * 
+     * If you do this, the brush config will change with the external config
+     */
+    bindConfig(config: DynamicShapeBasicConfig) {
+        this.config = config
     }
 
     private changeSize(size: number, pressure: number): number {

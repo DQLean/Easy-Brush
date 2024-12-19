@@ -1,7 +1,8 @@
-import { BrushBasicConfig, BrushAdvancedConfig, BrushConfig } from "./types/config";
+import { BrushBasicConfig, BrushConfig } from "./types/config";
 import { Module } from "./types/modules";
 import { PurePoint, Point, PointCallBack } from "./types/point";
-import { getControlPoint, quadraticBezier } from "./utils/bezier";
+import { getControlPoint, getEquidistantBezierPoints } from "./utils/bezier";
+import { toHashColor } from "./utils/color";
 import { getAngle, getDistance } from "./utils/math";
 
 const defaultCvs: HTMLCanvasElement = document.createElement('canvas');
@@ -17,11 +18,9 @@ const defaultBasicConfig: BrushBasicConfig = {
     spacing: 0.5,
 }
 
-const defaultAdvancedConfig: BrushAdvancedConfig = {
-    isSmooth: true, // Is curve smoothing enabled
-    isSpacing: true, // Is interpolation filling enabled
-}
-
+/**
+ * Basic brush object
+ */
 export class Brush {
     // Original Content Canvas
     private oriCanvas: HTMLCanvasElement = defaultCvs;
@@ -36,18 +35,6 @@ export class Brush {
     private shapeCanvas?: HTMLCanvasElement;
     private shapeContext?: CanvasRenderingContext2D;
 
-
-
-    private blendMode: CanvasRenderingContext2D['globalCompositeOperation'] = 'source-over';
-    private filter: CanvasRenderingContext2D['filter'] = 'none';
-
-
-
-    private config: BrushBasicConfig = defaultBasicConfig;
-    private advancedConfig: BrushAdvancedConfig = defaultAdvancedConfig;
-
-
-
     private points: Point[] = [];
     private drawCount: number = 0;
 
@@ -60,7 +47,7 @@ export class Brush {
 
     private isRender: boolean = false;
 
-    private modules: Module[] = []
+    private modules: Map<string, Module> = new Map();
 
     /** min space pixel */
     private readonly minSpacePixel: number = 0.5;
@@ -77,6 +64,18 @@ export class Brush {
         }
     }
 
+    /** Brush Config */
+    config: BrushBasicConfig = defaultBasicConfig;
+    /** Is curve smoothing enabled (default: true) */
+    isSmooth: boolean = true;
+    /** Is interpolation filling enabled (default: true) */
+    isSpacing: boolean = true;
+    /** Blend Mode (default: 'source-over') */
+    blendMode: CanvasRenderingContext2D['globalCompositeOperation'] = 'source-over';
+    /** Filter (default: 'none') */
+    filter: CanvasRenderingContext2D['filter'] = 'none';
+
+
     constructor(canvas: HTMLCanvasElement, config?: BrushConfig) {
         if (config) this.loadConfig(config)
         this.loadContext(canvas)
@@ -84,7 +83,7 @@ export class Brush {
 
     private newPoint(x: number, y: number, pressure: number): Point {
         const cnf = { ...this.config }
-        for (let module of this.modules) {
+        for (let [id, module] of this.modules) {
             if (module.onChangeConfig) {
                 module.onChangeConfig(cnf, pressure)
             }
@@ -119,7 +118,7 @@ export class Brush {
             if (this.shapeContext.fillStyle !== p.config.color.toLowerCase()) {
                 const globalCompositeOperation = this.shapeContext.globalCompositeOperation
                 this.shapeContext.globalCompositeOperation = "source-atop"
-                this.shapeContext.fillStyle = p.config.color
+                this.shapeContext.fillStyle = toHashColor(p.config.color)
                 this.shapeContext.beginPath()
                 this.shapeContext.fillRect(0, 0, this.shapeCanvas.width, this.shapeCanvas.height)
                 this.shapeContext.globalCompositeOperation = globalCompositeOperation
@@ -127,7 +126,7 @@ export class Brush {
 
             //rotate
             this.strokeContext.translate(p.x, p.y)
-            this.strokeContext.rotate(Math.PI * 2 - p.config.angle)
+            this.strokeContext.rotate(p.config.angle * 360 * Math.PI / 180)
             this.strokeContext.translate(-(p.config.size / 2), -(p.config.size / this.shapeRatio / 2))
 
             const width = p.config.size * p.config.roundness
@@ -139,8 +138,14 @@ export class Brush {
                 width, height,
             )
         } else {
+            const size = p.config.size
+            const roundness = p.config.roundness
+            const smallerRadius = size * roundness
             this.strokeContext.fillStyle = p.config.color
-            this.strokeContext.arc(p.x, p.y, p.config.size / 2, 0, Math.PI * 2, false)
+            this.strokeContext.translate(p.x, p.y)
+            this.strokeContext.rotate(p.config.angle * 360 * Math.PI / 180)
+            this.strokeContext.ellipse(0, 0, size, smallerRadius, 0, 0, Math.PI * 2, false)
+            this.strokeContext.translate(-p.x, -p.y)
             this.strokeContext.fill()
         }
 
@@ -203,7 +208,7 @@ export class Brush {
         if (!this.shapeCanvas || !this.shapeContext) return
         const oriGlobalCompositeOperation = this.shapeContext.globalCompositeOperation
         this.shapeContext.globalCompositeOperation = "source-atop"
-        this.shapeContext.fillStyle = "#000"
+        this.shapeContext.fillStyle = "#000000"
         this.shapeContext.beginPath()
         this.shapeContext.rect(0, 0, this.shapeCanvas.width, this.shapeCanvas.height)
         this.shapeContext.fill()
@@ -246,32 +251,33 @@ export class Brush {
     }
 
     /**
-     * set brush config
-     */
-    setConfig<T extends keyof BrushBasicConfig>(key: T, val: BrushBasicConfig[T]) {
-        this.config[key] = val;
-    }
-
-    /**
-     * set advanced config
-     */
-    setAdvancedConfig<T extends keyof BrushAdvancedConfig>(key: T, val: BrushAdvancedConfig[T]) {
-        this.advancedConfig[key] = val;
-    }
-
-    /**
      * Load/Modify Brush Configuration
+     * 
+     * This function only exists in the config field. 
+     * 
+     * You can also modify brush.config
+     * 
+     * @example
+     * brush.loadConfig({size: 10})
+     * brush.config.size = 10
      */
     loadConfig(config: BrushConfig) {
-        this.config = {
-            size: config.size ?? this.config.size,
-            opacity: config.opacity ?? this.config.opacity,
-            flow: config.flow ?? this.config.flow,
-            color: config.color ?? this.config.color,
-            angle: config.angle ?? this.config.angle,
-            roundness: config.roundness ?? this.config.roundness,
-            spacing: config.spacing ?? this.config.spacing,
-        };
+        if (config.size != void 0 && config.size != null) this.config.size = config.size;
+        if (config.opacity != void 0 && config.opacity != null) this.config.opacity = config.opacity;
+        if (config.flow != void 0 && config.flow != null) this.config.flow = config.flow;
+        if (config.color != void 0 && config.color != null) this.config.color = config.color;
+        if (config.angle != void 0 && config.angle != null) this.config.angle = config.angle;
+        if (config.roundness != void 0 && config.roundness != null) this.config.roundness = config.roundness;
+        if (config.spacing != void 0 && config.spacing != null) this.config.spacing = config.spacing;
+    }
+
+    /**
+     * Bind config to brush. 
+     * 
+     * If you do this, the brush config will change with the external config
+     */
+    bindConfig(config: BrushBasicConfig) {
+        this.config = config
     }
 
 
@@ -315,12 +321,10 @@ export class Brush {
      * (interpolation and Bessel calculations will be performed)
      */
     putPoint(x: number, y: number, pressure: number) {
-        if (!this.prePoint || !this.advancedConfig.isSpacing) {
-            /**
-             * 如果不存在前一个点，或者不启用间距，则直接加入坐标池，无需计算插值
-             */
+        if (!this.prePoint || !this.isSpacing) {
+            // When there is no previous point or spacing is not enabled, simply add it to the coordinate pool without calculating interpolation
             let isHandled = false
-            for (let module of this.modules) {
+            for (let [id, module] of this.modules) {
                 if (module.onChangePoint) {
                     const res = module.onChangePoint({ x, y, pressure }, { ...this.config })
                     if (Array.isArray(res)) {
@@ -346,13 +350,12 @@ export class Brush {
                 this.prePoint = { ...point }
             }
         } else {
-            /**
-             * 计算当前点与前一个点之间是否需要插值，并且计算插值及贝塞尔变换
-             */
+            // Calculate whether interpolation is required between the current point and the previous point, and calculate interpolation and Bezier transform
             const p1: PurePoint = { x, y, pressure }
             const p2: PurePoint = this.prePoint
             const p3: PurePoint = this.prePrePoint || p2
             let distance = getDistance(p2.x, p2.y, p1.x, p1.y)
+
             let space = this.config.spacing * this.config.size
             if (space < this.minSpacePixel) space = this.minSpacePixel
             if (Math.floor(distance / space) <= 0) return
@@ -370,53 +373,71 @@ export class Brush {
             // 上一个插值点
             const lastP = { x: p1.x, y: p1.y, pressure: p1.pressure }
 
-            for (let i = space; i <= distance; i += space) {
-                const t = i / distance
-                const curPressure = p2.pressure + (p1.pressure - p2.pressure) * t
+            if (this.isSmooth) {
+                const points = getEquidistantBezierPoints(p2.x, p2.y, control.x, control.y, p1.x, p1.y, space)
 
-                let pointX: number, pointY: number = 0
+                for (const i in points) {
+                    if (!Object.prototype.hasOwnProperty.call(points, i)) {
+                        return
+                    }
 
-                if (this.advancedConfig.isSmooth) {
-                    // 贝塞尔变换
-                    const { x, y } = quadraticBezier(t, p2.x, p2.y, control.x, control.y, p1.x, p1.y)
-                    pointX = x
-                    pointY = y
-                } else {
-                    // 不使用贝塞尔变换
+                    const point = points[i];
+                    const t = parseInt(i) / points.length
+                    const curPressure = p2.pressure + (p1.pressure - p2.pressure) * t
+
+                    lastP.x = point.x
+                    lastP.y = point.y
+                    lastP.pressure = curPressure
+
+                    let isHandled = false
+                    for (let [id, module] of this.modules) {
+                        if (module.onChangePoint) {
+                            const res = module.onChangePoint({ x: point.x, y: point.y, pressure: curPressure }, { ...this.config })
+                            if (Array.isArray(res)) {
+                                for (let p of res) {
+                                    this.points.push(this.newPoint(p.x, p.y, p.pressure))
+                                }
+                            } else {
+                                this.points.push(this.newPoint(res.x, res.y, res.pressure))
+                            }
+                            isHandled = true
+                        }
+                    }
+                    if (!isHandled) {
+                        interpolationPoints.push(this.newPoint(point.x, point.y, curPressure))
+                    }
+                }
+            } else {
+                for (let i = space; i <= distance; i += space) {
+                    const t = i / distance
+                    const curPressure = p2.pressure + (p1.pressure - p2.pressure) * t
+
+                    let pointX: number, pointY: number = 0
+
                     pointX = p2.x + Math.cos(angle) * i
                     pointY = p2.y + Math.sin(angle) * i
-                }
 
-                if (interpolationPoints.length > 0) {
-                    // 矫正贝塞尔变换后的space差异
-                    const intDist = getDistance(pointX, pointY, lastP.x, lastP.y)
-                    if (intDist != space) {
-                        const angle = getAngle(lastP.x, lastP.y, pointX, pointY)
-                        pointX = lastP.x + Math.cos(angle) * space
-                        pointY = lastP.y + Math.sin(angle) * space
-                    }
-                }
+                    lastP.x = pointX
+                    lastP.y = pointY
+                    lastP.pressure = curPressure
 
-                lastP.x = pointX
-                lastP.y = pointY
-                lastP.pressure = curPressure
-
-                let isHandled = false
-                for (let module of this.modules) {
-                    if (module.onChangePoint) {
-                        const res = module.onChangePoint({ x: pointX, y: pointY, pressure: curPressure }, { ...this.config })
-                        if (Array.isArray(res)) {
-                            for (let p of res) {
-                                this.points.push(this.newPoint(p.x, p.y, p.pressure))
+                    let isHandled = false
+                    for (let [id, module] of this.modules) {
+                        if (module.onChangePoint) {
+                            const res = module.onChangePoint({ x: pointX, y: pointY, pressure: curPressure }, { ...this.config })
+                            if (Array.isArray(res)) {
+                                for (let p of res) {
+                                    this.points.push(this.newPoint(p.x, p.y, p.pressure))
+                                }
+                            } else {
+                                this.points.push(this.newPoint(res.x, res.y, res.pressure))
                             }
-                        } else {
-                            this.points.push(this.newPoint(res.x, res.y, res.pressure))
+                            isHandled = true
                         }
-                        isHandled = true
                     }
-                }
-                if (!isHandled) {
-                    interpolationPoints.push(this.newPoint(pointX, pointY, curPressure))
+                    if (!isHandled) {
+                        interpolationPoints.push(this.newPoint(pointX, pointY, curPressure))
+                    }
                 }
             }
 
@@ -481,9 +502,40 @@ export class Brush {
     }
 
     /**
-     * Use a module
+     * Clear all canvas
      */
-    useModule(module: Module) {
-        this.modules.push(module)
+    clear() {
+        this.points = []
+        this.prePoint = void 0
+        this.prePrePoint = void 0
+        this.oriCanvas && this.oriContext && this.oriContext.clearRect(0, 0, this.oriCanvas.width, this.oriCanvas.height)
+        this.showCanvas && this.showContext && this.showContext.clearRect(0, 0, this.showCanvas.width, this.showCanvas.height)
+        this.strokeCanvas && this.strokeContext && this.strokeContext.clearRect(0, 0, this.strokeCanvas.width, this.strokeCanvas.height)
+    }
+
+    /**
+     * Use a module
+     * @returns module unique id
+     */
+    useModule(module: Module): string {
+        for (const [id, existingModule] of this.modules) {
+            if (JSON.stringify(existingModule) === JSON.stringify(module)) {
+                return id;
+            }
+        }
+        const uniqueId = `${Date.now()}-${Math.random().toString(36).substring(2, 9)}`
+        this.modules.set(uniqueId, module)
+        return uniqueId
+    }
+
+    /**
+     * Remove a module
+     */
+    removeModule(uniqueId: string): boolean {
+        if (this.modules.has(uniqueId)) {
+            this.modules.delete(uniqueId);
+            return true;
+        }
+        return false
     }
 }

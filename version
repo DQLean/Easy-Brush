@@ -1,0 +1,4 @@
+v0.3.3
+- Fix the issue where the roundness and angle and opacity of the paintbrush without images do not take effect
+- Add clear function to brush object
+- Optimizing Bezier Curve Algorithm

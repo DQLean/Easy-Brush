@@ -13,10 +13,25 @@ const defaultConfig: DynamicTransparencyBasicConfig = {
 }
 
 export class DynamicTransparencyModule {
-    private config: DynamicTransparencyBasicConfig = defaultConfig;
+    /** module config */
+    config: DynamicTransparencyBasicConfig = defaultConfig;
 
     constructor(config?: DynamicTransparencyConfig) {
-        this.config = { ...defaultConfig, ...config };
+        if (config?.opacityJitter != void 0 && config?.opacityJitter != null) this.config.opacityJitter = config.opacityJitter;
+        if (config?.opacityJitterTrigger != void 0 && config?.opacityJitterTrigger != null) this.config.opacityJitterTrigger = config.opacityJitterTrigger;
+        if (config?.minOpacityJitter != void 0 && config?.minOpacityJitter != null) this.config.minOpacityJitter = config.minOpacityJitter;
+        if (config?.flowJitter != void 0 && config?.flowJitter != null) this.config.flowJitter = config.flowJitter;
+        if (config?.flowJitterTrigger != void 0 && config?.flowJitterTrigger != null) this.config.flowJitterTrigger = config.flowJitterTrigger;
+        if (config?.minFlowJitter != void 0 && config?.minFlowJitter != null) this.config.minFlowJitter = config.minFlowJitter;
+    }
+
+    /**
+     * Bind config to brush. 
+     * 
+     * If you do this, the brush config will change with the external config
+     */
+    bindConfig(config: DynamicTransparencyBasicConfig) {
+        this.config = config
     }
 
     private changeOpacity(opacity: number, pressure: number): number {

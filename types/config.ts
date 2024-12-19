@@ -22,10 +22,3 @@ export interface BrushConfig {
     roundness?: number
     spacing?: number
 }
-
-export interface BrushAdvancedConfig {
-    /** default true */
-    isSmooth: boolean
-    /** default true */
-    isSpacing: boolean
-}

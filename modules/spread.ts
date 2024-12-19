@@ -13,10 +13,24 @@ const defaultConfig: SpreadBasicConfig = {
 }
 
 export class SpreadModule {
-    private config: SpreadBasicConfig = defaultConfig;
+    /** module config */
+    config: SpreadBasicConfig = defaultConfig;
 
     constructor(config?: SpreadConfig) {
-        this.config = { ...defaultConfig, ...config };
+        if (config?.spreadRange != void 0 && config?.spreadRange != null) this.config.spreadRange = config.spreadRange;
+        if (config?.spreadTrigger != void 0 && config?.spreadTrigger != null) this.config.spreadTrigger = config.spreadTrigger;
+        if (config?.count != void 0 && config?.count != null) this.config.count = config.count;
+        if (config?.countJitter != void 0 && config?.countJitter != null) this.config.countJitter = config.countJitter;
+        if (config?.countJitterTrigger != void 0 && config?.countJitterTrigger != null) this.config.countJitterTrigger = config.countJitterTrigger;
+    }
+
+    /**
+     * Bind config to brush. 
+     * 
+     * If you do this, the brush config will change with the external config
+     */
+    bindConfig(config: SpreadBasicConfig) {
+        this.config = config
     }
 
     private spread(size: number, x: number, y: number, pressure: number): PurePoint[] {
