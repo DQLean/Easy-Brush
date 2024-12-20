@@ -1,3 +1,6 @@
+v0.3.4
+- New pen pressure simulator that can simulate reasonable pen pressure changes on the mouse
+
 v0.3.3
 - Fix the issue where the roundness and angle and opacity of the paintbrush without images do not take effect
 - Add clear function to brush object

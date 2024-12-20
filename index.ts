@@ -8,3 +8,5 @@ export { type Module } from './types/modules'
 export { type DynamicShapeConfig, type DynamicShapeBasicConfig } from './types/dynamicShape'
 export { type DynamicTransparencyConfig, type DynamicTransparencyBasicConfig } from './types/dynamicTransparency'
 export { type SpreadConfig, type SpreadBasicConfig } from './types/spread'
+
+export { MousePressure } from './pressure'

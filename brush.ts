@@ -378,7 +378,7 @@ export class Brush {
 
                 for (const i in points) {
                     if (!Object.prototype.hasOwnProperty.call(points, i)) {
-                        return
+                        continue
                     }
 
                     const point = points[i];
