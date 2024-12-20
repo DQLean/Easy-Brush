@@ -1,3 +1,7 @@
+v0.3.5
+- change readme
+- Add brush image loading failure warning
+
 v0.3.4
 - New pen pressure simulator that can simulate reasonable pen pressure changes on the mouse
 

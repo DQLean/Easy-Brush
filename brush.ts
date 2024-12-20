@@ -83,7 +83,7 @@ export class Brush {
 
     private newPoint(x: number, y: number, pressure: number): Point {
         const cnf = { ...this.config }
-        for (let [id, module] of this.modules) {
+        for (let [_, module] of this.modules) {
             if (module.onChangeConfig) {
                 module.onChangeConfig(cnf, pressure)
             }
@@ -218,6 +218,10 @@ export class Brush {
 
     private loadImageWithCanvas(img: HTMLCanvasElement) {
         const canvas = img
+        if (canvas.width === 0 || canvas.height === 0) {
+            console.warn("[loadImage] Canvas size is 0, please check your canvas.")
+            return
+        }
         this.shapeCanvas = canvas
         this.shapeContext = canvas.getContext("2d") as CanvasRenderingContext2D;
 
@@ -227,6 +231,10 @@ export class Brush {
     private loadImageWithElement(img: HTMLImageElement) {
         const image = img as HTMLImageElement
         const shapeCvs = document.createElement("canvas")
+        if (image.naturalWidth === 0 || image.naturalHeight === 0) {
+            console.warn("[loadImage] Image natural size is 0, please check your image url.")
+            return
+        }
         shapeCvs.width = image.naturalWidth
         shapeCvs.height = image.naturalHeight
         const shapeCtx = shapeCvs.getContext("2d") as CanvasRenderingContext2D;
@@ -324,7 +332,7 @@ export class Brush {
         if (!this.prePoint || !this.isSpacing) {
             // When there is no previous point or spacing is not enabled, simply add it to the coordinate pool without calculating interpolation
             let isHandled = false
-            for (let [id, module] of this.modules) {
+            for (let [_, module] of this.modules) {
                 if (module.onChangePoint) {
                     const res = module.onChangePoint({ x, y, pressure }, { ...this.config })
                     if (Array.isArray(res)) {
@@ -390,7 +398,7 @@ export class Brush {
                     lastP.pressure = curPressure
 
                     let isHandled = false
-                    for (let [id, module] of this.modules) {
+                    for (let [_, module] of this.modules) {
                         if (module.onChangePoint) {
                             const res = module.onChangePoint({ x: point.x, y: point.y, pressure: curPressure }, { ...this.config })
                             if (Array.isArray(res)) {
@@ -422,7 +430,7 @@ export class Brush {
                     lastP.pressure = curPressure
 
                     let isHandled = false
-                    for (let [id, module] of this.modules) {
+                    for (let [_, module] of this.modules) {
                         if (module.onChangePoint) {
                             const res = module.onChangePoint({ x: pointX, y: pointY, pressure: curPressure }, { ...this.config })
                             if (Array.isArray(res)) {

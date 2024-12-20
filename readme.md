@@ -8,6 +8,10 @@ Easy-Brush is a brush engine developed on the JavaScript platform. The line segm
 - lines entirely composed of points
 - Good performance optimization
 
+## Demo
+[Demo Online](https://dqlean.github.io/Easy-Brush-Demo/ "Demo Online")
+
+
 ## Installation
 
 Include the Easy-Brush script in your Project:

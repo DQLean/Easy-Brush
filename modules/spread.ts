@@ -1,5 +1,5 @@
 import { BrushBasicConfig } from "../types/config";
-import { Point, PurePoint } from "../types/point";
+import { PurePoint } from "../types/point";
 import { SpreadBasicConfig, SpreadConfig } from "../types/spread";
 import { clamp } from "../utils/math";
 import { randomND, randomRound } from "../utils/random";
