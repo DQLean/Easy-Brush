@@ -126,8 +126,8 @@ export class Brush {
 
             //rotate
             this.strokeContext.translate(p.x, p.y)
-            this.strokeContext.rotate(p.config.angle * 360 * Math.PI / 180)
-            this.strokeContext.translate(-(p.config.size / 2), -(p.config.size / this.shapeRatio / 2))
+            this.strokeContext.rotate(-p.config.angle * 360 * Math.PI / 180)
+            this.strokeContext.translate(-(p.config.size * p.config.roundness / 2), -(p.config.size / this.shapeRatio / 2))
 
             const width = p.config.size * p.config.roundness
             const height = p.config.size / this.shapeRatio
@@ -143,9 +143,8 @@ export class Brush {
             const smallerRadius = size * roundness
             this.strokeContext.fillStyle = p.config.color
             this.strokeContext.translate(p.x, p.y)
-            this.strokeContext.rotate(p.config.angle * 360 * Math.PI / 180)
+            this.strokeContext.rotate(-p.config.angle * 360 * Math.PI / 180)
             this.strokeContext.ellipse(0, 0, size, smallerRadius, 0, 0, Math.PI * 2, false)
-            this.strokeContext.translate(-p.x, -p.y)
             this.strokeContext.fill()
         }
 
