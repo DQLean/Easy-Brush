@@ -1,3 +1,6 @@
+v0.4.0
+- Add pattern module
+
 v0.3.6
 - Fixed a bug where the shape is not centered when the roundness is less than 1 when using an image brush
 

@@ -140,8 +140,14 @@ const spreadConfig: SpreadBasicConfig = {
 }
 const spreadModule = new SpreadModule()
 spreadModule.bindConfig(spreadConfig)
-brush.useModule(const spreadModule = new SpreadModule()
-)
+brush.useModule(spreadModule)
+```
+
+#### Use Pattern (Beta)
+```javascript
+import { PatternModule } from 'easy-brush';
+const patternModule = new PatternModule(PatternImg, canvas.width, canvas.height)
+brush.useModule(patternModule)
 ```
 
 ## License

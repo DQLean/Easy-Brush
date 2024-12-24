@@ -137,6 +137,7 @@ export class Brush {
                 0, 0,
                 width, height,
             )
+            this.strokeContext.translate(p.config.size * p.config.roundness / 2 + p.x, p.config.size / this.shapeRatio / 2 + p.y)
         } else {
             const size = p.config.size
             const roundness = p.config.roundness
@@ -146,10 +147,21 @@ export class Brush {
             this.strokeContext.rotate(-p.config.angle * 360 * Math.PI / 180)
             this.strokeContext.ellipse(0, 0, size, smallerRadius, 0, 0, Math.PI * 2, false)
             this.strokeContext.fill()
+            this.strokeContext.translate(-p.x, -p.y)
         }
 
         // render to show canvas
         if (this.points.length === 0 || this.drawCount >= this.minRenderInterval) {
+            let strokeCanvas: HTMLCanvasElement = this.strokeCanvas
+            let strokeContext: CanvasRenderingContext2D = this.strokeContext
+
+            // onMergeCanvas
+            for (let [_, module] of this.modules) {
+                if (module.onMergeCanvas) {
+                    [strokeCanvas, strokeContext] = module.onMergeCanvas(this.showCanvas, this.showContext, this.strokeCanvas, this.strokeContext)
+                }
+            }
+
             const globalCompositeOperation = this.showContext.globalCompositeOperation
             const globalAlpha = this.showContext.globalAlpha
 
@@ -162,7 +174,7 @@ export class Brush {
             this.showContext.filter = this.filter
 
             // mix
-            this.showContext.drawImage(this.strokeCanvas, 0, 0)
+            this.showContext.drawImage(strokeCanvas, 0, 0)
 
             // restore
             this.showContext.filter = ""

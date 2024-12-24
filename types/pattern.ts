@@ -1,6 +1,4 @@
 export interface PatternConfig {
-    /** Image resource */
-    resource?: HTMLImageElement | HTMLCanvasElement | string,
     /** Image scale (0.00-1.00) (default: 1.00) */
     scale?: number,
     /** Image opacity */
@@ -12,8 +10,6 @@ export interface PatternConfig {
 }
 
 export interface PatternBasicConfig {
-    /** Image resource */
-    resource: HTMLImageElement | HTMLCanvasElement | string,
     /** Image scale (0.00-1.00) (default: 1.00) */
     scale: number,
     /** Image opacity */
