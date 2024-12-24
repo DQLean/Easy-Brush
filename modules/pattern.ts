@@ -14,19 +14,19 @@ export class PatternModule {
     /** module config */
     config: PatternBasicConfig = defaultConfig;
 
+    private pattern: CanvasPattern | void = void 0
+
     private patternCanvas: HTMLCanvasElement = document.createElement('canvas');
     private patternContext: CanvasRenderingContext2D = this.patternCanvas.getContext('2d') as CanvasRenderingContext2D;
 
     private patternBlendCanvas: HTMLCanvasElement = document.createElement('canvas');
     private patternBlendContext: CanvasRenderingContext2D = this.patternBlendCanvas.getContext('2d') as CanvasRenderingContext2D;
 
-    constructor(resource: string | HTMLCanvasElement | HTMLImageElement, canvasWidth: number, canvasHeight: number, patternColor?: string, config?: PatternConfig) {
+    constructor(config?: PatternConfig) {
         if (config?.scale != void 0 && config?.scale != null) this.config.scale = config.scale;
         if (config?.brightness != void 0 && config?.brightness != null) this.config.brightness = config.brightness;
         if (config?.contrast != void 0 && config?.contrast != null) this.config.contrast = config.contrast;
         if (config?.blendMode != void 0 && config?.blendMode != null) this.config.blendMode = config.blendMode;
-
-        this.loadPattern(resource, canvasWidth, canvasHeight, patternColor)
     }
 
     private loadImageWithUrl(url: string): Promise<HTMLCanvasElement> {
@@ -102,8 +102,14 @@ export class PatternModule {
 
         this.patternContext.beginPath()
 
-        this.patternContext.fillStyle = this.patternContext.createPattern(cvs, "repeat") as CanvasPattern
+        this.pattern = this.patternContext.createPattern(cvs, "repeat") as CanvasPattern
+
+        this.patternContext.fillStyle = this.pattern
         this.patternContext.fillRect(0, 0, canvasWidth, canvasHeight)
+    }
+
+    removePattern() {
+        this.pattern = void 0
     }
 
     /**
@@ -116,6 +122,8 @@ export class PatternModule {
     }
 
     onMergeCanvas(showCanvas: HTMLCanvasElement, showContext: CanvasRenderingContext2D, strokeCanvas: HTMLCanvasElement, strokeContext: CanvasRenderingContext2D): [HTMLCanvasElement, CanvasRenderingContext2D] {
+        if (!this.pattern) return [strokeCanvas, strokeContext]
+
         const patternGlobalCompositeOperation = this.patternBlendContext.globalCompositeOperation
         this.patternBlendContext.clearRect(0, 0, this.patternBlendCanvas.width, this.patternBlendCanvas.height)
         this.patternBlendContext.drawImage(this.patternCanvas, 0, 0)

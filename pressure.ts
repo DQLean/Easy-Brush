@@ -20,7 +20,7 @@ export class MousePressure {
     private minRange: number
     private maxRange: number
 
-    private status = false
+    private _status = false
 
     private prePoint?: Point = void 0
 
@@ -28,7 +28,7 @@ export class MousePressure {
         this.K = k
         this.minRange = minRange
         this.maxRange = maxRange
-        this.status = true
+        this._status = true
     }
 
     /**
@@ -38,7 +38,7 @@ export class MousePressure {
      * @returns {number} pressure
      */
     getPressure(x: number, y: number): number {
-        if (!this.status) return this.MIDDLE_PRESSURE
+        if (!this._status) return this.MIDDLE_PRESSURE
         if (!this.prePoint) {
             this.prePoint = { x, y, pressure: this.MIDDLE_PRESSURE }
             return this.MIDDLE_PRESSURE
@@ -79,14 +79,21 @@ export class MousePressure {
      * Close pen pressure simulation
      */
     close() {
-        this.status = false
+        this._status = false
         this.reset()
     }
     /**
      * Open pen pressure simulation
      */
     open() {
-        this.status = true
+        this._status = true
         this.reset()
+    }
+
+    /**
+     * Get pen pressure simulation status
+     */
+    status() {
+        return this._status
     }
 }

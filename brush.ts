@@ -334,6 +334,11 @@ export class Brush {
         })
     }
 
+    removeImage() {
+        this.shapeCanvas = void 0
+        this.shapeContext = void 0
+    }
+
     /**
      * Add the current point to the point pool, 
      * which will be rendered when the render function is called 
