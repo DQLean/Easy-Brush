@@ -55,6 +55,7 @@ export class SpreadModule {
 
             newCoordinates.push(coordinate)
         }
+        
         return newCoordinates
     }
 

@@ -152,7 +152,9 @@ export class Brush {
 
         // render to show canvas
         if (this.points.length === 0 || this.drawCount >= this.minRenderInterval) {
+            //@ts-ignore
             let strokeCanvas: HTMLCanvasElement = this.strokeCanvas
+            //@ts-ignore
             let strokeContext: CanvasRenderingContext2D = this.strokeContext
 
             // onMergeCanvas
@@ -346,6 +348,8 @@ export class Brush {
      */
     putPoint(x: number, y: number, pressure: number) {
         if (!this.prePoint || !this.isSpacing) {
+            this.prePrePoint = this.prePoint
+            this.prePoint = { x, y, pressure }
             // When there is no previous point or spacing is not enabled, simply add it to the coordinate pool without calculating interpolation
             let isHandled = false
             for (let [_, module] of this.modules) {
@@ -355,14 +359,10 @@ export class Brush {
                         for (let p of res) {
                             const point: Point = this.newPoint(p.x, p.y, p.pressure)
                             this.points.push(point)
-                            this.prePrePoint = this.prePoint
-                            this.prePoint = { ...point }
                         }
                     } else {
                         const point: Point = this.newPoint(res.x, res.y, res.pressure)
                         this.points.push(point)
-                        this.prePrePoint = this.prePoint
-                        this.prePoint = { ...point }
                     }
                     isHandled = true
                 }
@@ -370,8 +370,7 @@ export class Brush {
             if (!isHandled) {
                 const point: Point = this.newPoint(x, y, pressure)
                 this.points.push(point)
-                this.prePrePoint = this.prePoint
-                this.prePoint = { ...point }
+
             }
         } else {
             // Calculate whether interpolation is required between the current point and the previous point, and calculate interpolation and Bezier transform
@@ -392,8 +391,6 @@ export class Brush {
             // 获取贝塞尔控制点
             const control = getControlPoint(p1.x, p1.y, p2.x, p2.y, p3.x, p3.y)
 
-            // 当前插值点列表
-            const interpolationPoints = []
             // 上一个插值点
             const lastP = { x: p1.x, y: p1.y, pressure: p1.pressure }
 
@@ -417,6 +414,7 @@ export class Brush {
                     for (let [_, module] of this.modules) {
                         if (module.onChangePoint) {
                             const res = module.onChangePoint({ x: point.x, y: point.y, pressure: curPressure }, { ...this.config })
+
                             if (Array.isArray(res)) {
                                 for (let p of res) {
                                     this.points.push(this.newPoint(p.x, p.y, p.pressure))
@@ -428,7 +426,7 @@ export class Brush {
                         }
                     }
                     if (!isHandled) {
-                        interpolationPoints.push(this.newPoint(point.x, point.y, curPressure))
+                        this.points.push(this.newPoint(point.x, point.y, curPressure))
                     }
                 }
             } else {
@@ -460,15 +458,11 @@ export class Brush {
                         }
                     }
                     if (!isHandled) {
-                        interpolationPoints.push(this.newPoint(pointX, pointY, curPressure))
+                        this.points.push(this.newPoint(pointX, pointY, curPressure))
                     }
                 }
             }
 
-            for (let p of interpolationPoints) {
-                this.points.push(p)
-            }
-            interpolationPoints.length = 0
             this.prePrePoint = this.prePoint
             this.prePoint = { x: lastP.x, y: lastP.y, pressure: lastP.pressure }
         }

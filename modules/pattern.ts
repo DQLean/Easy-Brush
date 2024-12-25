@@ -121,6 +121,7 @@ export class PatternModule {
         this.config = config
     }
 
+    // @ts-ignore
     onMergeCanvas(showCanvas: HTMLCanvasElement, showContext: CanvasRenderingContext2D, strokeCanvas: HTMLCanvasElement, strokeContext: CanvasRenderingContext2D): [HTMLCanvasElement, CanvasRenderingContext2D] {
         if (!this.pattern) return [strokeCanvas, strokeContext]
 

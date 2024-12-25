@@ -184,7 +184,8 @@ brush.useModule(spreadModule)
 The Pattern module controls brush textures. You can control dynamic parameters by binding configurations.
 ```javascript
 import { PatternModule } from 'easy-brush';
-const patternModule = new PatternModule(PatternImg, canvas.width, canvas.height)
+const patternModule = new PatternModule()
+patternModule.loadPattern(PatternImg, canvas.width, canvas.height)
 brush.useModule(patternModule)
 ```
 
