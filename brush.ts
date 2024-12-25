@@ -20,6 +20,9 @@ const defaultBasicConfig: BrushBasicConfig = {
 
 /**
  * Basic brush object
+ * 
+ * @param canvas Canvas Element (If not, please use loadContext to load it later)
+ * @param config Brush Config (If not, please access the config property later or use the bindConfig function to modify it)
  */
 export class Brush {
     // Original Content Canvas
@@ -76,9 +79,9 @@ export class Brush {
     filter: CanvasRenderingContext2D['filter'] = 'none';
 
 
-    constructor(canvas: HTMLCanvasElement, config?: BrushConfig) {
+    constructor(canvas?: HTMLCanvasElement, config?: BrushConfig) {
         if (config) this.loadConfig(config)
-        this.loadContext(canvas)
+        if (canvas) this.loadContext(canvas)
     }
 
     private newPoint(x: number, y: number, pressure: number): Point {

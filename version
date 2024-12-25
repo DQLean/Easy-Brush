@@ -1,3 +1,6 @@
+v0.4.3
+- Canvas is not mandatory when using new Brush now, and can be loaded later using the loadContext function
+
 v0.4.2
 - Fix bug with abnormal quantity of points when using the scatter module
 
