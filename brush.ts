@@ -22,7 +22,7 @@ const defaultBasicConfig: BrushBasicConfig = {
  * Basic brush object
  * 
  * @param canvas Canvas Element (If not, please use loadContext to load it later)
- * @param config Brush Config (If not, please access the config property later or use the bindConfig function to modify it)
+ * @param config Brush Config (If not, please access the config property later or use the loadConfig function to modify it)
  */
 export class Brush {
     // Original Content Canvas
@@ -197,7 +197,11 @@ export class Brush {
         if (p.callback) try { p.callback() } catch (err) { console.error(err) }
     }
 
-    private loadContext(canvas: HTMLCanvasElement) {
+    /**
+     * Load the canvas you want to draw
+     * @param canvas 
+     */
+    loadContext(canvas: HTMLCanvasElement) {
         const showCvs = canvas;
         const showCtx = canvas.getContext('2d') as CanvasRenderingContext2D;
 
