@@ -1,3 +1,6 @@
+v0.4.5
+- Now every time the canvas is mixed, the line canvas is cleared
+
 v0.4.4
 - fix bugs
 

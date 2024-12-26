@@ -180,6 +180,9 @@ export class Brush {
 
             // mix
             this.showContext.drawImage(strokeCanvas, 0, 0)
+            this.strokeContext.clearRect(0, 0, this.strokeCanvas.width, this.strokeCanvas.height)
+            this.oriContext.clearRect(0, 0, this.oriCanvas.width, this.oriCanvas.height)
+            this.oriContext.drawImage(this.showCanvas, 0, 0)
 
             // restore
             this.showContext.filter = ""
