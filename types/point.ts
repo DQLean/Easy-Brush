@@ -8,6 +8,7 @@ export interface PurePoint {
 
 export interface Point extends PurePoint {
     config: BrushBasicConfig,
+    strokeEnd?: boolean,
     callback?: PointCallBack
 }
 

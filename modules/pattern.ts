@@ -122,7 +122,7 @@ export class PatternModule {
     }
 
     // @ts-ignore
-    onMergeCanvas(showCanvas: HTMLCanvasElement, showContext: CanvasRenderingContext2D, strokeCanvas: HTMLCanvasElement, strokeContext: CanvasRenderingContext2D): [HTMLCanvasElement, CanvasRenderingContext2D] {
+    onMixinCanvas(strokeCanvas: HTMLCanvasElement, strokeContext: CanvasRenderingContext2D): [HTMLCanvasElement, CanvasRenderingContext2D] {
         if (!this.pattern) return [strokeCanvas, strokeContext]
 
         const patternGlobalCompositeOperation = this.patternBlendContext.globalCompositeOperation

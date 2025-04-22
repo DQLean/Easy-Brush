@@ -7,5 +7,6 @@ export interface Module {
     /**
      * @returns [strokeCanvas, strokeContext]
      */
-    onMergeCanvas?(showCanvas: HTMLCanvasElement, showContext: CanvasRenderingContext2D, strokeCanvas: HTMLCanvasElement, strokeContext: CanvasRenderingContext2D): [HTMLCanvasElement, CanvasRenderingContext2D];
+    onMixinCanvas?(strokeCanvas: HTMLCanvasElement, strokeContext: CanvasRenderingContext2D): [HTMLCanvasElement, CanvasRenderingContext2D];
+    onEndStroke?(): void;
 }

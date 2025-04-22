@@ -5,8 +5,45 @@ import { getControlPoint, getEquidistantBezierPoints } from "./utils/bezier";
 import { toHashColor } from "./utils/color";
 import { getAngle, getDistance } from "./utils/math";
 
-const defaultCvs: HTMLCanvasElement = document.createElement('canvas');
-const defaultCtx: CanvasRenderingContext2D = defaultCvs.getContext('2d') as CanvasRenderingContext2D;
+
+// const createCanvas = (function (): (width: number, height: number) => HTMLCanvasElement | OffscreenCanvas {
+//     if (typeof OffscreenCanvas === 'undefined') {
+//         return (width: number = 0, height: number = 0): HTMLCanvasElement => {
+//             const canvas = document.createElement('canvas');
+//             canvas.width = width;
+//             canvas.height = height;
+//             return canvas;
+//         }
+//     } else {
+//         return (width: number = 0, height: number = 0): OffscreenCanvas => {
+//             const canvas = new OffscreenCanvas(width, height);
+//             return canvas;
+//         }
+//     }
+// })()
+
+
+// const getContext = (function (): Function {
+//     if (typeof OffscreenCanvas === 'undefined') {
+//         return (canvas: HTMLCanvasElement): CanvasRenderingContext2D => {
+//             return canvas.getContext('2d') as CanvasRenderingContext2D;
+//         }
+//     } else {
+//         return (canvas: OffscreenCanvas): OffscreenCanvasRenderingContext2D => {
+//             return canvas.getContext('2d') as OffscreenCanvasRenderingContext2D;
+//         }
+//     }
+// })
+
+const createCanvas = (width: number = 0, height: number = 0): HTMLCanvasElement => {
+    const canvas = document.createElement('canvas');
+    canvas.width = width;
+    canvas.height = height;
+    return canvas;
+}
+const getContext = (canvas: HTMLCanvasElement): CanvasRenderingContext2D => {
+    return canvas.getContext('2d', { willReadFrequently: true }) as CanvasRenderingContext2D;
+}
 
 const defaultBasicConfig: BrushBasicConfig = {
     size: 20,
@@ -25,18 +62,98 @@ const defaultBasicConfig: BrushBasicConfig = {
  * @param config Brush Config (If not, please access the config property later or use the loadConfig function to modify it)
  */
 export class Brush {
+    /***********************************Undo/Redo**********************************/
+    private canvasStack: ImageData[] = []
+    private canvasStackIndex: number = -1;
+    /**
+     * Maximum number of undo/redo operations (0 means no limit)
+     */
+    maxUndoRedoStackSize: number = 10
+    private initCanvasStack() {
+        this.canvasStack = []
+        this.canvasStackIndex = -1
+        if (this.maxUndoRedoStackSize <= 0) {
+            return
+        }
+        if (this.oriCanvas && this.oriContext) {
+            this.canvasStack.push(this.oriContext.getImageData(0, 0, this.oriCanvas.width, this.oriCanvas.height))
+            this.canvasStackIndex++
+        }
+
+    }
+    /**
+     * Undo
+     */
+    undo() {
+        if (this.canvasStackIndex > 0) {
+            this.canvasStackIndex--;
+            this.context?.putImageData(this.canvasStack[this.canvasStackIndex], 0, 0)
+            this.oriContext?.putImageData(this.canvasStack[this.canvasStackIndex], 0, 0)
+        }
+    }
+    /**
+     * Redo
+     */
+    redo() {
+        if (this.canvasStackIndex < this.canvasStack.length - 1) {
+            this.canvasStackIndex++;
+            this.context?.putImageData(this.canvasStack[this.canvasStackIndex], 0, 0)
+            this.oriContext?.putImageData(this.canvasStack[this.canvasStackIndex], 0, 0)
+        }
+    }
+    /******************************************************************************/
+
+    /***********************************canvas*************************************/
+    // Source Canvas
+    private canvas?: HTMLCanvasElement;
+    private context?: CanvasRenderingContext2D;
     // Original Content Canvas
-    private oriCanvas: HTMLCanvasElement = defaultCvs;
-    private oriContext: CanvasRenderingContext2D = defaultCtx;
-    // Mixed Display Canvas
-    private showCanvas: HTMLCanvasElement = defaultCvs;
-    private showContext: CanvasRenderingContext2D = defaultCtx;
-    // Draw Canvas
-    private strokeCanvas: HTMLCanvasElement = defaultCvs;
-    private strokeContext: CanvasRenderingContext2D = defaultCtx;
+    private oriCanvas?: HTMLCanvasElement;
+    private oriContext?: CanvasRenderingContext2D;
+    // Current Draw Canvas
+    private strokeCanvas?: HTMLCanvasElement;
+    private strokeContext?: CanvasRenderingContext2D;
+    // Transfer Canvas
+    private transferCanvas?: HTMLCanvasElement;
+    private transferContext?: CanvasRenderingContext2D;
     // Shape Canvas
     private shapeCanvas?: HTMLCanvasElement;
     private shapeContext?: CanvasRenderingContext2D;
+
+    private initSourceCanvas(canvas: HTMLCanvasElement) {
+        this.canvas = canvas
+        this.context = getContext(this.canvas)
+    }
+
+    private initOriCanvas(canvas: HTMLCanvasElement) {
+        this.oriCanvas = createCanvas(canvas.width, canvas.height)
+        this.oriContext = getContext(this.oriCanvas)
+        this.oriContext.drawImage(canvas, 0, 0, canvas.width, canvas.height)
+    }
+
+    private initStrokeCanvas(canvas: HTMLCanvasElement) {
+        this.strokeCanvas = createCanvas(canvas.width, canvas.height)
+        this.strokeContext = getContext(this.strokeCanvas)
+    }
+
+    private initTransferCanvasCanvas(canvas: HTMLCanvasElement) {
+        this.transferCanvas = createCanvas(canvas.width, canvas.height)
+        this.transferContext = getContext(this.transferCanvas)
+
+    }
+
+    /**
+     * Load the canvas you want to draw
+     * @param canvas 
+     */
+    loadContext(canvas: HTMLCanvasElement) {
+        this.initSourceCanvas(canvas)
+        this.initOriCanvas(canvas)
+        this.initStrokeCanvas(canvas)
+        this.initTransferCanvasCanvas(canvas)
+        this.initCanvasStack()
+    }
+    /******************************************************************************/
 
     private points: Point[] = [];
     private drawCount: number = 0;
@@ -79,6 +196,7 @@ export class Brush {
     filter: CanvasRenderingContext2D['filter'] = 'none';
 
 
+
     constructor(canvas?: HTMLCanvasElement, config?: BrushConfig) {
         if (config) this.loadConfig(config)
         if (canvas) this.loadContext(canvas)
@@ -103,22 +221,114 @@ export class Brush {
         return { x, y, pressure, config: cnf }
     }
 
-    // start drawing
+
+    private mixin(): void {
+        if (!this.canvas || !this.context || !this.oriCanvas || !this.oriContext || !this.strokeCanvas || !this.strokeContext || !this.transferCanvas || !this.transferContext) {
+            throw new Error('Canvas not loaded, please use "loadContext" to load it')
+        }
+
+        this.context.clearRect(0, 0, this.canvas.width, this.canvas.height)
+        this.context.drawImage(this.oriCanvas, 0, 0)
+
+        //@ts-ignore
+        let strokeCanvas: HTMLCanvasElement = this.strokeCanvas
+        //@ts-ignore
+        let strokeContext: CanvasRenderingContext2D = this.strokeContext
+
+        // onMergeCanvas
+        for (let [_, module] of this.modules) {
+            if (module.onMixinCanvas) {
+                [strokeCanvas, strokeContext] = module.onMixinCanvas(this.strokeCanvas, this.strokeContext)
+            }
+        }
+
+        // transfer canvas
+        this.transferContext.clearRect(0, 0, this.transferCanvas.width, this.transferCanvas.height)
+        this.transferContext.drawImage(strokeCanvas, 0, 0)
+
+        // blend mode
+        const globalCompositeOperation = this.context.globalCompositeOperation
+        this.context.globalCompositeOperation = this.blendMode
+        // filter
+        const filter = this.context.filter
+        this.context.filter = this.filter
+
+        this.context.drawImage(this.transferCanvas, 0, 0)
+
+        // blend mode restore
+        this.context.globalCompositeOperation = globalCompositeOperation
+        // filter restore
+        this.context.filter = filter
+    }
+
+    private endStroke() {
+        if (!this.canvas || !this.context || !this.oriCanvas || !this.oriContext || !this.strokeCanvas || !this.strokeContext || !this.transferCanvas || !this.transferContext) {
+            throw new Error('Canvas not loaded, please use "loadContext" to load it')
+        }
+        //@ts-ignore
+        let strokeCanvas: HTMLCanvasElement = this.strokeCanvas
+        //@ts-ignore
+        let strokeContext: CanvasRenderingContext2D = this.strokeContext
+
+        // onMergeCanvas
+        for (let [_, module] of this.modules) {
+            if (module.onMixinCanvas) {
+                [strokeCanvas, strokeContext] = module.onMixinCanvas(this.strokeCanvas, this.strokeContext)
+            }
+        }
+        // transfer canvas
+        this.transferContext.clearRect(0, 0, this.transferCanvas.width, this.transferCanvas.height)
+        this.transferContext.drawImage(strokeCanvas, 0, 0)
+        this.oriContext.drawImage(this.transferCanvas, 0, 0)
+        this.strokeContext.clearRect(0, 0, strokeCanvas.width, strokeCanvas.height)
+
+
+        // command stack
+        if (this.maxUndoRedoStackSize > 0) {
+            if (this.canvasStackIndex != this.canvasStack.length - 1) {
+                this.canvasStack.splice(this.canvasStackIndex + 1, this.canvasStack.length - this.canvasStackIndex - 1)
+            }
+            this.canvasStackIndex = this.canvasStack.push((this.context.getImageData(0, 0, this.canvas.width, this.canvas.height))) - 1
+            if (this.canvasStack.length > this.maxUndoRedoStackSize) {
+                this.canvasStack.shift()
+                this.canvasStackIndex--
+            }
+        }
+
+
+        // onEndStroke
+        for (let [_, module] of this.modules) {
+            if (module.onEndStroke) {
+                module.onEndStroke()
+            }
+        }
+    }
+
+    // draw point
     private draw() {
-        if (this.points.length === 0) return
+        if (!this.oriCanvas || !this.oriContext || !this.strokeCanvas || !this.strokeContext || !this.transferCanvas || !this.transferContext) {
+            throw new Error('Canvas not loaded, please use "loadContext" to load it')
+        }
+        if (this.points.length === 0) {
+            return
+        }
 
         const p = this.points.shift() as Point;
 
         this.strokeContext.save()
-        this.strokeContext.beginPath()
 
         // flow
-        this.strokeContext.globalAlpha = (p.config.opacity / 1) * p.config.flow
+        this.strokeContext.globalAlpha = p.config.flow
+
+        // opacity
+        this.transferContext.globalAlpha = p.config.opacity
 
         // draw to stroke canvas
         if (this.shapeCanvas && this.shapeContext) {
             // change color
             if (this.shapeContext.fillStyle !== p.config.color.toLowerCase()) {
+                console.log(1);
+
                 const globalCompositeOperation = this.shapeContext.globalCompositeOperation
                 this.shapeContext.globalCompositeOperation = "source-atop"
                 this.shapeContext.fillStyle = toHashColor(p.config.color)
@@ -140,92 +350,48 @@ export class Brush {
                 0, 0,
                 width, height,
             )
-            this.strokeContext.translate(p.config.size * p.config.roundness / 2 + p.x, p.config.size / this.shapeRatio / 2 + p.y)
+
+            // rotate back
+            // this.strokeContext.translate(-p.x, -p.y)
+            // this.strokeContext.rotate(p.config.angle * 360 * Math.PI / 180)
+            // this.strokeContext.translate(p.config.size * p.config.roundness / 2, p.config.size / this.shapeRatio / 2)
         } else {
             const size = p.config.size
             const roundness = p.config.roundness
             const smallerRadius = size * roundness
+            this.strokeContext.beginPath()
             this.strokeContext.fillStyle = p.config.color
             this.strokeContext.translate(p.x, p.y)
             this.strokeContext.rotate(-p.config.angle * 360 * Math.PI / 180)
             this.strokeContext.ellipse(0, 0, size, smallerRadius, 0, 0, Math.PI * 2, false)
             this.strokeContext.fill()
-            this.strokeContext.translate(-p.x, -p.y)
+            // rotate back
+            // this.strokeContext.translate(-p.x, -p.y)
+            // this.strokeContext.rotate(p.config.angle * 360 * Math.PI / 180)
+            this.strokeContext.closePath()
         }
 
-        // render to show canvas
+        this.strokeContext.restore()
+
+        // mixin to show canvas
         if (this.points.length === 0 || this.drawCount >= this.minRenderInterval) {
-            //@ts-ignore
-            let strokeCanvas: HTMLCanvasElement = this.strokeCanvas
-            //@ts-ignore
-            let strokeContext: CanvasRenderingContext2D = this.strokeContext
-
-            // onMergeCanvas
-            for (let [_, module] of this.modules) {
-                if (module.onMergeCanvas) {
-                    [strokeCanvas, strokeContext] = module.onMergeCanvas(this.showCanvas, this.showContext, this.strokeCanvas, this.strokeContext)
-                }
-            }
-
-            const globalCompositeOperation = this.showContext.globalCompositeOperation
-            const globalAlpha = this.showContext.globalAlpha
-
-            this.showContext.clearRect(0, 0, this.showCanvas.width, this.showCanvas.height)
-            this.showContext.drawImage(this.oriCanvas, 0, 0)
-
-            // blend mode
-            this.showContext.globalCompositeOperation = this.blendMode
-            // filter
-            this.showContext.filter = this.filter
-
-            // mix
-            this.showContext.drawImage(strokeCanvas, 0, 0)
-            this.strokeContext.clearRect(0, 0, this.strokeCanvas.width, this.strokeCanvas.height)
-            this.oriContext.clearRect(0, 0, this.oriCanvas.width, this.oriCanvas.height)
-            this.oriContext.drawImage(this.showCanvas, 0, 0)
-
-            // restore
-            this.showContext.filter = ""
-            this.showContext.globalCompositeOperation = globalCompositeOperation
-            this.showContext.globalAlpha = globalAlpha
-
+            this.mixin()
             this.drawCount = 0
         } else {
             this.drawCount++
         }
 
-        this.strokeContext.restore()
-
+        // strokeEnd
+        if (p.strokeEnd === true) {
+            this.endStroke()
+        }
         // callback
-        if (p.callback) try { p.callback() } catch (err) { console.error(err) }
+        if (p.callback) try {
+            p.callback()
+        } catch (err) { console.error(err) }
     }
 
-    /**
-     * Load the canvas you want to draw
-     * @param canvas 
-     */
-    loadContext(canvas: HTMLCanvasElement) {
-        const showCvs = canvas;
-        const showCtx = canvas.getContext('2d') as CanvasRenderingContext2D;
 
-        const oriCvs = document.createElement("canvas")
-        oriCvs.width = showCvs.width
-        oriCvs.height = showCvs.height
-        const oriCtx = oriCvs.getContext("2d") as CanvasRenderingContext2D;
-        oriCtx.drawImage(showCvs, 0, 0)
-
-        const strokeCvs = document.createElement("canvas")
-        strokeCvs.width = showCvs.width
-        strokeCvs.height = showCvs.height
-        const strokeCtx = strokeCvs.getContext("2d") as CanvasRenderingContext2D;
-
-        this.oriCanvas = oriCvs
-        this.oriContext = oriCtx
-        this.showCanvas = showCvs
-        this.showContext = showCtx
-        this.strokeCanvas = strokeCvs
-        this.strokeContext = strokeCtx
-    }
 
     private imageInitColoring() {
         if (!this.shapeCanvas || !this.shapeContext) return
@@ -522,9 +688,19 @@ export class Brush {
     finalizeStroke(callback?: PointCallBack) {
         this.prePoint = void 0
         this.prePrePoint = void 0
+        if (this.points.length > 0) {
+            this.points[this.points.length - 1].strokeEnd = true
+        }
+        if (this.points.length > 0) {
+            this.points[this.points.length - 1].strokeEnd = true
+        } else {
+            this.endStroke()
+        }
         if (callback) {
             if (this.points.length === 0) {
-                try { callback() } catch (err) { console.error(err) }
+                try {
+                    callback()
+                } catch (err) { console.error(err) }
             } else this.points[this.points.length - 1].callback = callback
         }
     }
@@ -536,9 +712,10 @@ export class Brush {
         this.points = []
         this.prePoint = void 0
         this.prePrePoint = void 0
+        this.canvas && this.context && this.context.clearRect(0, 0, this.canvas.width, this.canvas.height)
         this.oriCanvas && this.oriContext && this.oriContext.clearRect(0, 0, this.oriCanvas.width, this.oriCanvas.height)
-        this.showCanvas && this.showContext && this.showContext.clearRect(0, 0, this.showCanvas.width, this.showCanvas.height)
         this.strokeCanvas && this.strokeContext && this.strokeContext.clearRect(0, 0, this.strokeCanvas.width, this.strokeCanvas.height)
+        this.transferCanvas && this.transferContext && this.transferContext.clearRect(0, 0, this.transferCanvas.width, this.transferCanvas.height)
     }
 
     /**

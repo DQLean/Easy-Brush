@@ -16,6 +16,8 @@ export class DynamicTransparencyModule {
     /** module config */
     config: DynamicTransparencyBasicConfig = defaultConfig;
 
+    private opacity: number = -1
+
     constructor(config?: DynamicTransparencyConfig) {
         if (config?.opacityJitter != void 0 && config?.opacityJitter != null) this.config.opacityJitter = config.opacityJitter;
         if (config?.opacityJitterTrigger != void 0 && config?.opacityJitterTrigger != null) this.config.opacityJitterTrigger = config.opacityJitterTrigger;
@@ -35,6 +37,7 @@ export class DynamicTransparencyModule {
     }
 
     private changeOpacity(opacity: number, pressure: number): number {
+        if (this.opacity != -1) return this.opacity
         let newOpacity = opacity;
         if (this.config.opacityJitterTrigger === "pressure") {
             newOpacity = newOpacity * (pressure * 2)
@@ -47,6 +50,7 @@ export class DynamicTransparencyModule {
             newOpacity = this.config.minOpacityJitter * opacity
         }
 
+        this.opacity = newOpacity
         return newOpacity
     }
 
@@ -69,5 +73,9 @@ export class DynamicTransparencyModule {
     onChangeConfig(config: BrushBasicConfig, pressure: number) {
         config.opacity = this.changeOpacity(config.opacity, pressure)
         config.flow = this.changeFlow(config.flow, pressure)
+    }
+
+    onEndStroke() {
+        this.opacity = -1
     }
 }

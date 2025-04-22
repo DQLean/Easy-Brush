@@ -1,3 +1,9 @@
+v0.5.0
+- Fixed the issue with abnormal transparency settings; now transparency and flow can correctly perform their functions.
+- Modified the canvas blending logic.
+- Added Undo/Redo functionality, which can be directly executed via brush.undo/brush.redo. The stack size can be set using brush.maxUndoRedoStackSize, with a default value of 10. Setting it to 0 will disable this feature.
+
+
 v0.4.5
 - Now every time the canvas is mixed, the line canvas is cleared
 

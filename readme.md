@@ -67,7 +67,7 @@ canvas.addEventListener('mousedown', (e) => {
 });
 canvas.addEventListener('mousemove', (e) => {
     if (!isStarted) return
-    // Default pressure value; for actual pen pressure, check the event (e) object (usually available only in stylus mode)
+    // Default pressure value; for actual pen pressure, Pls use third party pressure library
     const pressure = 0.5
     // Or use the simulated pen pressure module
     // const pressure = MP.getPressure(e.offsetX, e.offsetY)
@@ -190,6 +190,13 @@ brush.useModule(patternModule)
 ```
 
 ![Pattern](https://github.com/DQLean/Easy-Brush/blob/main/docs/7.png "Pattern")
+
+### Undo/Redo
+```javascript
+brush.undo()
+brush.redo()
+```
+Changing the stack size through brush.maxUndoRedoStackSize will disable this feature when set to 0
 
 ## License
 

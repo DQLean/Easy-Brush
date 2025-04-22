@@ -67,7 +67,7 @@ canvas.addEventListener('mousedown', (e) => {
 });
 canvas.addEventListener('mousemove', (e) => {
     if (!isStarted) return
-    // 这里的pressure为默认pressure，如果你需要真实笔压值，可以在e(event)中找到笔压值参数，这通常仅在手写笔模式下存在
+    // 这里的pressure为默认pressure，如果你需要真实笔压值，请使用第三方笔压库
     const pressure = 0.5
     // 或者你可以使用笔压模拟模块
     // const pressure = MP.getPressure(e.offsetX, e.offsetY)
@@ -184,6 +184,13 @@ brush.useModule(patternModule)
 ```
 
 ![Pattern](https://github.com/DQLean/Easy-Brush/blob/main/docs/7.png "Pattern")
+
+### Undo/Redo
+```javascript
+brush.undo()
+brush.redo()
+```
+通过brush.maxUndoRedoStackSize改变栈大小，设置为0时将禁用此功能
 
 ## License
 This project is licensed under the MIT License.
